@@ -66,30 +66,62 @@ def rf(file):
     string = None
     with open(file, 'r') as f:
         string = f.read().replace('\n', ' ')
-    return string
-
-def mod(string):
-    '''
-    Modes are regular reading,
-    comments - anything in which can be ignored,
-    parentheses (which need to be closed)
-    strings (which also need to be closed)
-    '''
-    new_str = ''
-    in_string = 0
-    in_comment = 0
-    for i in len(string): # go character by character
-        char = string[i]
-        if not in_comment:
-            new_str += char
-        if in_string:
-            new_str += char
-            if in_string == char: # 
-                in_string = 0
-            
+    return string            
 
 #regex looks something like:
     
 #join[space]texttexttext[ends in space or semicolon or comma]
 # '\sjoin\s.*?[\s;,]'
 # 'create\s*table\s*.*?'
+def select_string(string):
+    str_list = list(string)
+    comma_locations = normal(str_list, 0, 0)
+    split_list = [string[:comma_locations[0]]]
+    for i in range(len(comma_locations)-1):
+        split_list.append(string[comma_locations[i]+1:comma_locations[i+1]].strip())
+    split_list.append(string[comma_locations[len(comma_locations)-1]:])
+    return split_list
+
+def normal(str_list, index, depth):
+    if index == len(str_list):
+        return []
+    if depth > 0:
+        parentheses(str_list, index, depth)
+    if index+1 < len(str_list) and str_list[index] == '/' and str_list[index+1] == '*':
+        return comment(str_list, index+2, depth)
+    elif str_list[index] == '\'':
+        return singlequote(str_list, index+1, depth)
+    elif str_list[index] == '"':
+        return doublequote(str_list, index+1, depth)
+    elif str_list[index] == '(':
+        return normal(str_list, index+1, depth+1)
+    elif str_list[index] == ')':
+        return normal(str_list, index+1, depth-1)
+    elif depth == 0 and str_list[index] == ',':
+        return [index] + normal(str_list, index+1, depth)
+    else:
+        return normal(str_list, index+1, depth)
+    
+def comment(str_list, index, depth):
+    while index+1 < len(str_list) and not (str_list[index] == '*' and str_list[index+1] == '/'):
+        index += 1
+    if index+1 < len(str_list) and str_list[index] == '*' and str_list[index+1] == '/':
+        return normal(str_list, index+2, depth)
+    else:
+        return []
+    
+def singlequote(str_list, index, depth):
+    while index < len(str_list) and not str_list[index] == '\'':
+        index += 1
+    if index < len(str_list) and str_list[index] == '\'':
+        return normal(str_list, index+1, depth)
+    else:
+        return []
+    
+def doublequote(str_list, index, depth):
+    while index < len(str_list) and not str_list[index] == '"':
+        index += 1
+    if index < len(str_list) and str_list[index] == '"':
+        return normal(str_list, index+1, depth)
+    else:
+        return []
