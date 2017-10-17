@@ -15,7 +15,7 @@ def get_query_list(string):
     string = string.strip() # remove leading and trailing whitespace
     string = string.lower() # lowercase only for easy parsing
     # TODO: Look for "proc sql;" and "quit;" and take text in between
-    arr = re.findall('proc sql;.*?quit;', string)
+    arr = re.findall('proc sql;.*?quit;', string) # minimal matching
     return [i[len('proc sql;'):-len('quit;')] for i in arr]
 
 def parse_table_sql(query):
@@ -42,8 +42,11 @@ def parse_from_sql(query):
     end_from_table_name1 = new_string.index(' ')
     table_name1 = query[begin_from_table_name1:begin_from_table_name1 + end_from_table_name1]
     # TODO: If there is a comma after "FROM <table1>", then there is at least one table inner-joined
-    # TODO: Check for tables from JOINS
-    return [table_name1]
+    all_tables = [table_name1]
+    joined_table_names = re.findall(r'join\s+?[a-z&\-\._0-9]+[\s;]', cleaned_query)
+    for table in joined_table_names:
+        all_tables.append(table[:-1])
+    return all_tables
     
 def get_dependency(query):
     'Print dependencies of a single query'
